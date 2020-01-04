@@ -1,9 +1,10 @@
 import pymesh
 import numpy as np
 # import matplotlib.pyplot as plt
-import os 
+import os
 
-def compare_curvature(gaussian_, mean_):
+
+def compare_curvature(gaussian_, mean_, save_npy=True):
     cmmon_path = os.path.commonpath([gaussian_, mean_])
     print(cmmon_path)
     gaussian_mesh = pymesh.load_mesh(gaussian_)
@@ -11,12 +12,33 @@ def compare_curvature(gaussian_, mean_):
 
     print(gaussian_mesh.get_attribute_names())
     attrs = ['vertex_red', 'vertex_green', 'vertex_blue']
-    for attr_name in attrs:
+    color_npy = np.zeros(shape=(mean_mesh.num_vertices, 3), dtype=np.int32)
+    g_colors = np.zeros(shape=(mean_mesh.num_vertices, 3), dtype=np.int32)
+    m_colors = np.zeros(shape=(mean_mesh.num_vertices, 3), dtype=np.int32)
+
+    for i, attr_name in enumerate(attrs):
         diff = abs(gaussian_mesh.get_vertex_attribute(attr_name) - \
                     mean_mesh.get_vertex_attribute(attr_name))
         gaussian_mesh.set_attribute(attr_name, diff)
+        color_npy[:, i] = diff.reshape(-1, )
+        m_colors[:, i] = mean_mesh.get_vertex_attribute(attr_name).reshape(-1, )
+        g_colors[:, i] = gaussian_mesh.get_vertex_attribute(attr_name).reshape(-1, )
 
-    pymesh.save_mesh(os.path.join(cmmon_path, "gaussian_mean_taubian_diff.ply"), gaussian_mesh, *attrs, ascii=True)
+    
+    if save_npy:
+        svp = os.path.join(cmmon_path, "colors.npy")
+        print(f"Saving colors to {svp}")
+        np.save(svp, color_npy)
+        svp = os.path.join(cmmon_path, "g_colors.npy")
+        np.save(svp, g_colors)
+        svp = os.path.join(cmmon_path, "m_colors.npy")
+        np.save(svp, m_colors)
+
+    pymesh.save_mesh(os.path.join(cmmon_path,
+                                  "gaussian_mean_taubian_diff.ply"),
+                     gaussian_mesh,
+                     *attrs,
+                     ascii=True)
 
 
 def edge_length(edge):
@@ -31,7 +53,7 @@ def calculate_mesh_quality(meshname):
     faces_areas = mesh.get_face_attribute('face_area')
     qualities, skewness = [], []
     print(mesh.num_faces)
-    
+
     equi_angle = np.pi / 3
     ang_180 = np.pi / 2
     for i, face in enumerate(mesh.faces):
@@ -89,7 +111,8 @@ def edge_skewness(edges):
 
 
 # mesh = pymesh.load_mesh('sphere.ply')
-calculate_mesh_quality('meshes/bunny/reconstruction/bun_zipper_gauss_taubin_apr.ply')
-# gmesh = 'meshes/bunny/reconstruction/bun_zipper_gauss_taubin_apr.ply'
-# mmesh = 'meshes/bunny/reconstruction/bun_zipper_mean_taubin_apr.ply'
-# compare_curvature(gmesh, mmesh)
+# calculate_mesh_quality(
+#     'meshes/bunny/reconstruction/bun_zipper_gauss_taubin_apr.ply')
+gmesh = 'meshes/bunny/reconstruction/bun_zipper_gauss_taubin_apr.ply'
+mmesh = 'meshes/bunny/reconstruction/bun_zipper_mean_taubin_apr.ply'
+compare_curvature(gmesh, mmesh)
