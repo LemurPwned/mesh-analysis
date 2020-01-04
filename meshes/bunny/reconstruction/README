@@ -19,3 +19,13 @@ Laboratory:
 
 	http://www-graphics.stanford.edu
 
+
+Created files .ply for algorithms:  
+* Pseudoinverse Quadriv Fitting,
+* Normal Cycles
+* Taubin Approximation
+* Principal Component Analysis  
+for each color mapping: mean curvature and gaussian curvature
+
+
+
