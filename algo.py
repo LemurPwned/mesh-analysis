@@ -1,6 +1,22 @@
 import pymesh
 import numpy as np
 import matplotlib.pyplot as plt
+import os 
+
+def compare_curvature(gaussian_, mean_):
+    cmmon_path = os.path.commonpath([gaussian_, mean_])
+    print(cmmon_path)
+    gaussian_mesh = pymesh.load_mesh(gaussian_)
+    mean_mesh = pymesh.load_mesh(mean_)
+
+    print(gaussian_mesh.get_attribute_names())
+    attrs = ['vertex_red', 'vertex_green', 'vertex_blue']
+    for attr_name in attrs:
+        diff = abs(gaussian_mesh.get_vertex_attribute(attr_name) - \
+                    mean_mesh.get_vertex_attribute(attr_name))
+        gaussian_mesh.set_attribute(attr_name, diff)
+
+    pymesh.save_mesh(os.path.join(cmmon_path, "gaussian_mean_taubian_diff.ply"), gaussian_mesh, *attrs, ascii=True)
 
 
 def edge_length(edge):
@@ -68,5 +84,8 @@ def edge_skewness(edges):
     return angle_collection
 
 
-mesh = pymesh.load_mesh('sphere.ply')
-calculate_mesh_quality(mesh)
+# mesh = pymesh.load_mesh('sphere.ply')
+# calculate_mesh_quality(mesh)
+gmesh = 'meshes/bunny/reconstruction/bun_zipper_gauss_taubin_apr.ply'
+mmesh = 'meshes/bunny/reconstruction/bun_zipper_mean_taubin_apr.ply'
+compare_curvature(gmesh, mmesh)
