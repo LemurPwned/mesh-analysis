@@ -1,0 +1,22 @@
+Mesh Bounding Box Size 6.627117 4.642481 2.275155
+Mesh Bounding Box Diag 8.405215 
+Mesh Bounding Box min 0.093983 0.186629 0.405895
+Mesh Bounding Box max 6.721100 4.829110 2.681050
+Mesh Surface Area is 37.768715
+Mesh Total Len of 981999 Edges is 12156.012695 Avg Len 0.012379
+Mesh Total Len of 981999 Edges is 12156.012695 Avg Len 0.012379 (including faux edges))
+Thin shell (faces) barycenter: 3.944030 2.533158 1.111087
+Vertices barycenter 3.907808 2.544401 1.125933
+Mesh Volume is 2.754044
+Center of Mass is 3.909578 2.448417 1.084418
+Inertia Tensor is :
+| 2.610634 0.609723 0.862710 |
+| 0.609723 6.559820 0.118700 |
+| 0.862710 0.118700 8.194430 |
+Principal axes are :
+| 0.979849 -0.139472 -0.142978 |
+| -0.119581 -0.982992 0.139384 |
+| -0.159987 -0.119478 -0.979862 |
+axis momenta are :
+| 2.397959 6.617163 8.349761 |
+Applied filter Compute Geometric Measures in 1398 msec 
