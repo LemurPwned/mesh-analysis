@@ -1,0 +1,7 @@
+V: 35947 E: 104496 F: 69664
+Unreferenced Vertices 1113
+Boundary Edges 0
+Mesh is composed by 1 connected component(s) 
+Mesh is two-manifold 
+Mesh has 0 holes
+Genus is 0
