@@ -101,10 +101,10 @@ def plot_histogram(ax, hist_data, bins=50, color='g', stats=True, fit=True):
                         label=f'-std: {std_quality}',
                         c='gray')
 
-def plot_quality(filename, quality_type='skewness'):
-    basename = os.path.basename(meshnpy_filename).replace('.npy', '')
-    qualities = np.load(meshnpy_filename)
-    
+def plot_quality(filename):
+    basename = os.path.basename(filename).replace('.npy', '')
+    qualities = np.load(filename)
+    quality_type = basename.split('_')[-1]
     fig, ax = plt.subplots()
     plot_histogram(ax, qualities)
 
@@ -112,14 +112,13 @@ def plot_quality(filename, quality_type='skewness'):
     plt.xlabel('Quality bins')
     plt.ylabel('Quality Count')
     plt.legend()
-    plt.show()
-    plt.savefig(f'MeshQual_{basename}_{quality_type}.png')
+    # plt.show()
+    plt.savefig(f'meshes/histograms/qualities/MeshQual_{basename}_{quality_type}.png')
 
 
-meshnpy_filename = './bun_zipper_gauss_taubin_apr_qualities.npy'
-# plot_quality(meshnpy_filename)
 
-# rbg_hist('meshes/bunny/reconstruction/colors.npy')
-# compare_histograms('meshes/bunny/reconstruction/g_colors.npy',
-#                    'meshes/bunny/reconstruction/m_colors.npy')
-laplacian_plot()
+quality_dir = 'meshes/mesh_data/quality_data'
+filenames = os.listdir(quality_dir)
+for filename in filenames:
+    fn = os.path.join(quality_dir, filename)
+    plot_quality(fn)

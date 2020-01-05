@@ -103,10 +103,10 @@ def calculate_mesh_quality(meshname):
     skewness = np.array(skewness)
     qualities = np.array(qualities)
     basename = os.path.basename(meshname).replace('.ply', '')
-    np.save(f'{basename}_qualities.npy', qualities)
-    np.save(f'{basename}_skewness.npy', skewness)
-    np.save(f'{basename}_areas.npy', faces_areas)
-    np.save(f'{basename}_min_angles.npy', min_angles)
+    np.save(f'meshes/mesh_data/quality_data/{basename}_qualities.npy', qualities)
+    np.save(f'meshes/mesh_data/quality_data/{basename}_skewness.npy', skewness)
+    np.save(f'meshes/mesh_data/quality_data/{basename}_areas.npy', faces_areas)
+    np.save(f'meshes/mesh_data/quality_data/{basename}_min_angles.npy', min_angles)
 
 
 def edge_skewness(edges):
@@ -124,10 +124,9 @@ def edge_skewness(edges):
     return angle_collection
 
 
-# mesh = pymesh.load_mesh('sphere.ply')
-# calculate_mesh_quality(
-    # 'meshes/bunny/reconstruction/bun_zipper_gauss_taubin_apr.ply')
-gmesh = 'meshes/bunny/reconstruction/bun_zipper_gauss_taubin_apr.ply'
-mesh_op(gmesh)
-# mmesh = 'meshes/bunny/reconstruction/bun_zipper_mean_taubin_apr.ply'
-# compare_curvature(gmesh, mmesh)
+
+for mesh_filename in ['meshes/bunny/reconstruction/bun_zipper.ply',
+                      'meshes/skeleton/hand.ply',
+                      'meshes/sphere/sphere.ply']:
+    print(f"Calculating qualities for {mesh_filename}...")
+    calculate_mesh_quality(mesh_filename)
