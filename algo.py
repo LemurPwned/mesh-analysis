@@ -3,6 +3,8 @@ import numpy as np
 # import matplotlib.pyplot as plt
 from scipy.sparse.linalg import eigs
 import os
+import itertools
+
 
 def mesh_op(filename):
     mesh = pymesh.load_mesh(filename)
@@ -14,13 +16,14 @@ def mesh_op(filename):
     np.save("eigenvals.npy", eigenvals)
     np.save("eigenvecs.npy", eigenvecs)
 
+
 def compare_curvature(gaussian_, mean_, save_npy=True):
     cmmon_path = os.path.commonpath([gaussian_, mean_])
-    print(cmmon_path)
+    # print(cmmon_path, gaussian_, mean_)
     gaussian_mesh = pymesh.load_mesh(gaussian_)
     mean_mesh = pymesh.load_mesh(mean_)
 
-    print(gaussian_mesh.get_attribute_names())
+    # print(gaussian_mesh.get_attribute_names())
     attrs = ['vertex_red', 'vertex_green', 'vertex_blue']
     color_npy = np.zeros(shape=(mean_mesh.num_vertices, 3), dtype=np.int32)
     g_colors = np.zeros(shape=(mean_mesh.num_vertices, 3), dtype=np.int32)
@@ -36,20 +39,34 @@ def compare_curvature(gaussian_, mean_, save_npy=True):
         g_colors[:, i] = gaussian_mesh.get_vertex_attribute(attr_name).reshape(
             -1, )
 
+    splits = os.path.basename(gaussian_.replace('.ply', '')).split('_')
+    base_file, curv1, method1 = '_'.join(splits[:2]), splits[-2], splits[-1]
+
+    splits = os.path.basename(mean_.replace('.ply', '')).split('_')
+    base_file, curv2, method2 = '_'.join(splits[:2]), splits[-2], splits[-1]
     if save_npy:
-        svp = os.path.join(cmmon_path, "colors.npy")
-        print(f"Saving colors to {svp}")
+        root_path = 'meshes/mesh_data/curvature_comp'
+
+        svp = os.path.join(
+            root_path,
+            f"diff/{base_file}_{curv1}_{curv2}_{method1}_{method2}_diff_colors.npy"
+        )
+
+        print(f"c1 {curv1} c2 {curv2}, m1 {method1}, m2 {method2}")
+        # print(f"Saving colors to {svp}")
         np.save(svp, color_npy)
-        svp = os.path.join(cmmon_path, "g_colors.npy")
+        svp = os.path.join(root_path,
+                           f"base/{base_file}_{curv1}_{method1}_colors.npy")
         np.save(svp, g_colors)
-        svp = os.path.join(cmmon_path, "m_colors.npy")
+        svp = os.path.join(root_path,
+                           f"base/{base_file}_{curv2}_{method2}_colors.npy")
         np.save(svp, m_colors)
 
-    pymesh.save_mesh(os.path.join(cmmon_path,
-                                  "gaussian_mean_taubian_diff.ply"),
-                     gaussian_mesh,
-                     *attrs,
-                     ascii=True)
+    # pymesh.save_mesh(os.path.join(
+    #     root_path, f"mesh/{base_file}_{curv1}_{method1}_{curv1}_{method2}.ply"),
+    #                  gaussian_mesh,
+    #                  *attrs,
+    #                  ascii=True)
 
 
 def edge_length(edge):
@@ -103,10 +120,12 @@ def calculate_mesh_quality(meshname):
     skewness = np.array(skewness)
     qualities = np.array(qualities)
     basename = os.path.basename(meshname).replace('.ply', '')
-    np.save(f'{basename}_qualities.npy', qualities)
-    np.save(f'{basename}_skewness.npy', skewness)
-    np.save(f'{basename}_areas.npy', faces_areas)
-    np.save(f'{basename}_min_angles.npy', min_angles)
+    np.save(f'meshes/mesh_data/quality_data/{basename}_qualities.npy',
+            qualities)
+    np.save(f'meshes/mesh_data/quality_data/{basename}_skewness.npy', skewness)
+    np.save(f'meshes/mesh_data/quality_data/{basename}_areas.npy', faces_areas)
+    np.save(f'meshes/mesh_data/quality_data/{basename}_min_angles.npy',
+            min_angles)
 
 
 def edge_skewness(edges):
@@ -124,10 +143,28 @@ def edge_skewness(edges):
     return angle_collection
 
 
-# mesh = pymesh.load_mesh('sphere.ply')
-# calculate_mesh_quality(
-    # 'meshes/bunny/reconstruction/bun_zipper_gauss_taubin_apr.ply')
-gmesh = 'meshes/bunny/reconstruction/bun_zipper_gauss_taubin_apr.ply'
-mesh_op(gmesh)
-# mmesh = 'meshes/bunny/reconstruction/bun_zipper_mean_taubin_apr.ply'
-# compare_curvature(gmesh, mmesh)
+def aggregate_mesh_quality_data():
+    for mesh_filename in [
+            'meshes/bunny/reconstruction/bun_zipper.ply',
+            'meshes/skeleton/hand.ply', 'meshes/sphere/sphere.ply'
+    ]:
+        print(f"Calculating qualities for {mesh_filename}...")
+        calculate_mesh_quality(mesh_filename)
+
+
+def aggregate_cmp_data():
+    methods = ['normal', 'principal', 'pseudoinverse', 'taubin_apr']
+    curvatures = ['gauss', 'mean']
+
+    curv_dir = 'meshes/bunny/reconstruction/curvatures'
+    fns = [
+        os.path.join(curv_dir, fn) for fn in os.listdir(curv_dir)
+    ]
+
+    for element in itertools.combinations(fns, r=2):
+        if element[0] != element[1]:
+            # print(f"Processing {element}")
+            compare_curvature(*element, save_npy=True)
+
+
+aggregate_cmp_data()
