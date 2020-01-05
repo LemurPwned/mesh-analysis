@@ -1,8 +1,18 @@
 import pymesh
 import numpy as np
 # import matplotlib.pyplot as plt
+from scipy.sparse.linalg import eigs
 import os
 
+def mesh_op(filename):
+    mesh = pymesh.load_mesh(filename)
+    assembler = pymesh.Assembler(mesh)
+    L = assembler.assemble("laplacian")
+    print(L.shape, mesh.num_vertices, mesh.num_faces)
+    eigenvals, eigenvecs = eigs(L, k=1000)
+    print(eigenvecs.shape, eigenvals.shape)
+    np.save("eigenvals.npy", eigenvals)
+    np.save("eigenvecs.npy", eigenvecs)
 
 def compare_curvature(gaussian_, mean_, save_npy=True):
     cmmon_path = os.path.commonpath([gaussian_, mean_])
@@ -21,10 +31,11 @@ def compare_curvature(gaussian_, mean_, save_npy=True):
                     mean_mesh.get_vertex_attribute(attr_name))
         gaussian_mesh.set_attribute(attr_name, diff)
         color_npy[:, i] = diff.reshape(-1, )
-        m_colors[:, i] = mean_mesh.get_vertex_attribute(attr_name).reshape(-1, )
-        g_colors[:, i] = gaussian_mesh.get_vertex_attribute(attr_name).reshape(-1, )
+        m_colors[:, i] = mean_mesh.get_vertex_attribute(attr_name).reshape(
+            -1, )
+        g_colors[:, i] = gaussian_mesh.get_vertex_attribute(attr_name).reshape(
+            -1, )
 
-    
     if save_npy:
         svp = os.path.join(cmmon_path, "colors.npy")
         print(f"Saving colors to {svp}")
@@ -51,8 +62,8 @@ def calculate_mesh_quality(meshname):
     mesh.enable_connectivity()
     mesh.add_attribute('face_area')
     faces_areas = mesh.get_face_attribute('face_area')
-    qualities, skewness = [], []
-    print(mesh.num_faces)
+    qualities, skewness, min_angles = [], [], []
+    print(f"Mesh contains {mesh.num_faces} faces")
 
     equi_angle = np.pi / 3
     ang_180 = np.pi / 2
@@ -87,12 +98,15 @@ def calculate_mesh_quality(meshname):
         q /= edges_len
         qualities.append(q)
         skewness.append(sk)
+        min_angles.append(min_angle)
 
     skewness = np.array(skewness)
     qualities = np.array(qualities)
     basename = os.path.basename(meshname).replace('.ply', '')
     np.save(f'{basename}_qualities.npy', qualities)
     np.save(f'{basename}_skewness.npy', skewness)
+    np.save(f'{basename}_areas.npy', faces_areas)
+    np.save(f'{basename}_min_angles.npy', min_angles)
 
 
 def edge_skewness(edges):
@@ -112,7 +126,8 @@ def edge_skewness(edges):
 
 # mesh = pymesh.load_mesh('sphere.ply')
 # calculate_mesh_quality(
-#     'meshes/bunny/reconstruction/bun_zipper_gauss_taubin_apr.ply')
+    # 'meshes/bunny/reconstruction/bun_zipper_gauss_taubin_apr.ply')
 gmesh = 'meshes/bunny/reconstruction/bun_zipper_gauss_taubin_apr.ply'
-mmesh = 'meshes/bunny/reconstruction/bun_zipper_mean_taubin_apr.ply'
-compare_curvature(gmesh, mmesh)
+mesh_op(gmesh)
+# mmesh = 'meshes/bunny/reconstruction/bun_zipper_mean_taubin_apr.ply'
+# compare_curvature(gmesh, mmesh)
