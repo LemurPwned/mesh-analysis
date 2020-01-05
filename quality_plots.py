@@ -108,7 +108,7 @@ def plot_quality(filename):
     fig, ax = plt.subplots()
     plot_histogram(ax, qualities)
 
-    plt.title(f'Mesh {quality_type} histogram')
+    plt.title(f'Mesh {quality_type} histogram for {basename}')
     plt.xlabel('Quality bins')
     plt.ylabel('Quality Count')
     plt.legend()
