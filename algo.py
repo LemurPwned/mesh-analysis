@@ -6,6 +6,20 @@ import os
 import itertools
 
 
+
+def compute_curvatures(filename):
+    mesh = pymesh.load_mesh(filename)
+    mesh.add_attribute('vertex_gaussian_curvature')
+    mesh.add_attribute('vertex_mean_curvature')
+
+    g = mesh.get_attribute("vertex_gaussian_curvature")
+    m = mesh.get_attribute("vertex_mean_curvature")
+
+    bname = os.path.basename(filename.replace('.ply', ''))
+    np.save(f"meshes/mesh_data/curvature_comp/pymesh_curv/{bname}_gaussian.npy", g)
+    np.save(f"meshes/mesh_data/curvature_comp/pymesh_curv/{bname}_mean.npy", m)
+
+
 def mesh_op(filename):
     mesh = pymesh.load_mesh(filename)
     assembler = pymesh.Assembler(mesh)
@@ -166,5 +180,13 @@ def aggregate_cmp_data():
             # print(f"Processing {element}")
             compare_curvature(*element, save_npy=True)
 
+def extract_curvatures():
+    for mesh_filename in [
+            'meshes/bunny/reconstruction/bun_zipper.ply',
+            'meshes/skeleton/hand.ply', 'meshes/sphere/sphere.ply'
+    ]:
+        print(f"Extracting for {mesh_filename}...")
+        compute_curvatures(mesh_filename)
 
-aggregate_cmp_data()
+# aggregate_cmp_data()
+extract_curvatures()

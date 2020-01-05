@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 from collections import defaultdict
 
+
 def laplacian_plot(filename='./eigenvals.npy'):
     eigenvals = np.load(filename)
     fig, ax = plt.subplots()
@@ -72,8 +73,14 @@ def gaussian_fn(x, *p):
     return A * np.exp(-(x - mean)**2 / (2. * sigma**2))
 
 
-def plot_histogram(ax, hist_data, bins=50, color='g', stats=True, fit=True):
-    hist, bins = np.histogram(hist_data, bins=bins, density=True)
+def plot_histogram(ax,
+                   hist_data,
+                   bins=50,
+                   color='g',
+                   stats=True,
+                   fit=True,
+                   density=True):
+    hist, bins = np.histogram(hist_data, bins=bins, density=density)
     bin_cntr = (bins[:-1] + bins[1:]) / 2
     width = 0.9 * (bins[1] - bins[0])
     """
@@ -126,7 +133,6 @@ def plot_quality(filename):
     plt.xlabel('Quality bins')
     plt.ylabel('Quality Count')
     plt.legend()
-    # plt.show()
     plt.savefig(
         f'meshes/histograms/qualities/MeshQual_{basename}_{quality_type}.png')
 
@@ -154,8 +160,9 @@ def calculate_aggregate_metrics():
             m2, fname2 = compare_histograms(*element, fn=KL_divergence)
             sfilenames = []
             assert len(m1[fname1]) == len(m2[fname2])
-            element = tuple([os.path.basename(e).replace('.npy', '') for e in element])
-            for i in range(int(len(m1[fname1])/2)):
+            element = tuple(
+                [os.path.basename(e).replace('.npy', '') for e in element])
+            for i in range(int(len(m1[fname1]) / 2)):
                 # accomodate for inverse hist comparison
                 sfilenames.append('_vs_'.join(element))
                 sfilenames.append('_vs_'.join(reversed(element)))
@@ -168,4 +175,39 @@ def calculate_aggregate_metrics():
     df = pd.DataFrame.from_dict(metrics)
     df.to_csv('meshes/mesh_data/curvature_comp/results.csv')
 
-calculate_aggregate_metrics()
+
+def plot_curvatures():
+    base_colors_curvature_dir = 'meshes/mesh_data/curvature_comp/pymesh_curv'
+    filenames = [
+        os.path.join(base_colors_curvature_dir, fn)
+        for fn in os.listdir(base_colors_curvature_dir)
+    ]
+    density = True
+    for filename in filenames:
+        curv = np.load(filename)
+        bname = os.path.basename(filename.replace('.npy', ''))
+        splits = bname.split('_')
+        fig, ax = plt.subplots()
+        curv = curv[~np.isnan(curv)]
+        curv = curv[~np.isposinf(curv)]
+
+        # limit curv
+        cmean = np.mean(curv)
+        std_ = np.std(curv)
+
+        curv = curv[(curv <= (cmean + 2 * std_))
+                    & (curv >= (cmean - 2 * std_))]
+
+        print(curv.shape)
+        plot_histogram(ax, curv, density=density)
+        plt.title(f"{splits[-1].capitalize()} curvature for {splits[0]}")
+        plt.xlabel(f'{splits[-1].capitalize()} bins')
+        plt.ylabel('Curvature values count')
+        plt.legend()
+        plt.savefig(
+            f'meshes/histograms/comparisons/CurvHist_{splits[0]}_{splits[-1]}_den_{density}.png'
+        )
+
+
+# calculate_aggregate_metrics()
+plot_curvatures()
