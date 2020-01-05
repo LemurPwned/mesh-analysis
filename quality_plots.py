@@ -154,6 +154,7 @@ def calculate_aggregate_metrics():
             m2, fname2 = compare_histograms(*element, fn=KL_divergence)
             sfilenames = []
             assert len(m1[fname1]) == len(m2[fname2])
+            element = tuple([os.path.basename(e).replace('.npy', '') for e in element])
             for i in range(int(len(m1[fname1])/2)):
                 # accomodate for inverse hist comparison
                 sfilenames.append('_vs_'.join(element))
