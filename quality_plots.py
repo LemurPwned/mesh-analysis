@@ -9,6 +9,31 @@ from scipy.optimize import curve_fit
 from collections import defaultdict
 
 
+def quadruple_plot(fs, title):
+    d = [np.load(f) for f in fs]
+    colors = ['aqua', 'lime', 'darkorange', 'fuchsia']
+    fig, axs = plt.subplots(2, 2, constrained_layout=True)
+    c = 0
+    for i in range(2):
+        for j in range(2):
+            bsn = os.path.basename(fs[c]).replace('.npy', '').replace('_', ' ').replace('vertex quality', ' ')
+            if 'principal' in bsn:
+                plot_histogram(axs[i, j], d[c], bins=50, color=colors[c], density=False)
+            else:
+                plot_histogram(axs[i, j], d[c], bins=50, color=colors[c])
+            axs[i, j].set_title(bsn)
+            c += 1 
+    for ax in axs.flat:
+        ax.set(xlabel='', ylabel='Curvature value count')
+        # ax.label_outer()
+
+    fig.suptitle(title, y=1)
+    plt.tight_layout()
+    plt.savefig("Vertex curvature")
+    # Hide x labels and tick labels for top plots and y ticks for right plots.
+    # for ax in axs.flat:
+
+
 def laplacian_plot(filename='./eigenvals.npy'):
     eigenvals = np.load(filename)
     fig, ax = plt.subplots()
@@ -108,9 +133,9 @@ def plot_histogram(ax,
            alpha=0.75)
     ax.set_ylim([0, max(hist) + 0.1])
     if fit and params_found:
-        ax.plot(bin_cntr, generated_gaussian, label='KDE', c='m')
+        ax.plot(bin_cntr, generated_gaussian, label='KDE', c='darkgray')
     if stats:
-        ax.axvline(x=mean_quality, linestyle='--', label='Mean', c='orange')
+        ax.axvline(x=mean_quality, linestyle='--', label='Mean', c='k')
         ax.axvline(x=mean_quality + std_quality,
                    linestyle='--',
                    label=f'+std: {std_quality}',
@@ -210,4 +235,17 @@ def plot_curvatures():
 
 
 # calculate_aggregate_metrics()
-plot_curvatures()
+# plot_curvatures()
+quadruple_plot([
+    'meshes/mesh_data/vertex_quality/sphere/curvature_gauss_normal_vertex_quality.npy',
+    'meshes/mesh_data/vertex_quality/sphere/curvature_gauss_principal_vertex_quality.npy',
+    'meshes/mesh_data/vertex_quality/sphere/curvature_gauss_pseudoinverse_vertex_quality.npy',
+    'meshes/mesh_data/vertex_quality/sphere/curvature_gauss_taubin_apr_vertex_quality.npy'
+], "Random mesh quality")
+
+quadruple_plot([
+    'meshes/mesh_data/vertex_quality/sphere/curvature_mean_normal_vertex_quality.npy',
+    'meshes/mesh_data/vertex_quality/sphere/curvature_mean_principal_vertex_quality.npy',
+    'meshes/mesh_data/vertex_quality/sphere/curvature_mean_pseudoinverse_vertex_quality.npy',
+    'meshes/mesh_data/vertex_quality/sphere/curvature_mean_taubin_apr_vertex_quality.npy'
+], "Random mesh quality")
