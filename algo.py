@@ -31,6 +31,18 @@ def mesh_op(filename):
     np.save("eigenvecs.npy", eigenvecs)
 
 
+def read_and_save_attr(filename, attribute):
+    mesh = pymesh.load_mesh(filename)
+    bsn = os.path.basename(filename.replace('.ply', ''))
+    attr_npy = mesh.get_vertex_attribute(attribute)
+    def_dir = f'meshes/mesh_data/{attribute}/sphere/'
+    print(def_dir)
+    print(filename)
+    os.makedirs(def_dir, exist_ok=True)
+    savename = f"{def_dir}/{bsn}_{attribute}.npy"
+    np.save(savename, attr_npy)
+
+
 def compare_curvature(gaussian_, mean_, save_npy=True):
     cmmon_path = os.path.commonpath([gaussian_, mean_])
     # print(cmmon_path, gaussian_, mean_)
@@ -188,5 +200,13 @@ def extract_curvatures():
         print(f"Extracting for {mesh_filename}...")
         compute_curvatures(mesh_filename)
 
+def extract_attribs(folder):
+    for fn in os.listdir(folder):
+        filename = os.path.join(folder, fn)
+        print(f"Processing {filename}")
+        read_and_save_attr(filename, 'vertex_quality')
+
 # aggregate_cmp_data()
-extract_curvatures()
+# extract_curvatures()
+extract_attribs('meshes/sphere/curvatures')
+
