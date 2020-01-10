@@ -16,13 +16,22 @@ def quadruple_plot(fs, title):
     c = 0
     for i in range(2):
         for j in range(2):
-            bsn = os.path.basename(fs[c]).replace('.npy', '').replace('_', ' ').replace('vertex quality', ' ')
+            bsn = os.path.basename(fs[c]).replace('.npy', '').replace(
+                '_', ' ').replace('vertex quality', ' ')
             if 'principal' in bsn:
-                plot_histogram(axs[i, j], d[c], bins=50, color=colors[c], density=False)
+                plot_histogram(axs[i, j],
+                               d[c],
+                               bins=50,
+                               color=colors[c],
+                               density=False)
             else:
-                plot_histogram(axs[i, j], d[c], bins=50, color=colors[c])
+                plot_histogram(axs[i, j],
+                               d[c],
+                               bins=50,
+                               color=colors[c],
+                               density=False)
             axs[i, j].set_title(bsn)
-            c += 1 
+            c += 1
     for ax in axs.flat:
         ax.set(xlabel='', ylabel='Curvature value count')
         # ax.label_outer()
@@ -46,10 +55,17 @@ def laplacian_plot(filename='./eigenvals.npy'):
 
 def KL_divergence(bins, H1, H2):
     KL_sum = 0
-    for b in bins:
+    for b in range(len(bins)):
         if H2[b] and H1[b]:
             KL_sum += H1[b] * np.log2(H1[b] / H2[b])
     return KL_sum
+
+
+def jensen_shannon_divergence(bins, H1, H2):
+    M = 0.5 * (H1 + H2)
+    jsd = 0.5*KL_divergence(bins, H1, M) + \
+           0.5*KL_divergence(bins, M, H2)
+    return jsd
 
 
 def hist_cmp(bins, H1, H2):
@@ -170,6 +186,64 @@ def aggregate_hist_plot():
         plot_quality(fn)
 
 
+def compare_qualities():
+    qualities_dir = 'meshes/mesh_data/quality_data'
+    filenames = [
+        os.path.join(qualities_dir, fn) for fn in os.listdir(qualities_dir)
+        if fn.endswith('.npy')
+    ]
+    metrics = defaultdict(list)
+    min_bin = 0
+    max_bin = 1.1
+    for quality_type in [
+            'areas', 'aspect_ratio', 'min_angles', 'qualities', ' skewness'
+    ]:
+        quality_fns = list(filter(lambda x: quality_type in x, filenames))
+        for element in itertools.permutations(quality_fns, r=2):
+            if element[0] != element[1]:
+                print(f"Processing {element}")
+                e1 = np.load(element[0])
+                e2 = np.load(element[1])
+
+                h1, be1 = np.histogram(e1, bins=50, range=(min_bin, max_bin))
+                h2, be2 = np.histogram(e2, bins=50, range=(min_bin, max_bin))
+                b1 = (be1[:-1] + be1[1:]) / 2  # centres
+                b2 = (be2[:-1] + be2[1:]) / 2
+                assert len(b1) == len(b2) == len(h1) == len(h2)
+                assert np.array_equal(b1, b2)
+
+                # entropy
+                dp = b1[1] - b1[0]
+                area1 = np.sum(h1) * dp
+                area2 = np.sum(h2) * dp
+                p1 = h1 / area1
+                p2 = h2 / area2
+                entropy1 = -np.nansum((h1 * dp) * np.log2(p1))
+                entropy2 = -np.nansum((h2 * dp) * np.log2(p2))
+
+                for i, e in enumerate([e1, e2]):
+                    for metrics_fn in [np.mean, np.std, np.std, np.median]:
+                        metrics[
+                            f"{metrics_fn.__name__.capitalize()} H{i}"] = metrics_fn(
+                                e)
+
+                bnames = [
+                    os.path.basename(el.replace('.npy', '')) for el in element
+                ]
+                metrics['H1'].append(bnames[0])
+                metrics['H2'].append(bnames[1])
+                metrics['H1 entropy'] = entropy1
+                metrics['H2 entropy'] = entropy2
+                metrics['KL divergence'].append(KL_divergence(b1, h1, h2))
+                metrics['Intersection'].append(hist_cmp(b1, h1, h2))
+                metrics['JSD'].append(jensen_shannon_divergence(b1, h1, h2))
+                metrics['Quality type'].append(quality_type)
+            else:
+                print("Dupe! Skipping")
+    df = pd.DataFrame.from_dict(metrics)
+    df.to_csv(f'{qualities_dir}/QualityMetrics.csv')
+
+
 def calculate_aggregate_metrics():
     base_colors_curvature_dir = 'meshes/mesh_data/curvature_comp/base'
     filenames = [
@@ -196,7 +270,6 @@ def calculate_aggregate_metrics():
             metrics[fname2].extend(m2[fname2])
         else:
             print("Dupe! Skipping")
-
     df = pd.DataFrame.from_dict(metrics)
     df.to_csv('meshes/mesh_data/curvature_comp/results.csv')
 
@@ -234,18 +307,19 @@ def plot_curvatures():
         )
 
 
+compare_qualities()
 # calculate_aggregate_metrics()
-# plot_curvatures()
-quadruple_plot([
-    'meshes/mesh_data/vertex_quality/sphere/curvature_gauss_normal_vertex_quality.npy',
-    'meshes/mesh_data/vertex_quality/sphere/curvature_gauss_principal_vertex_quality.npy',
-    'meshes/mesh_data/vertex_quality/sphere/curvature_gauss_pseudoinverse_vertex_quality.npy',
-    'meshes/mesh_data/vertex_quality/sphere/curvature_gauss_taubin_apr_vertex_quality.npy'
-], "Random mesh quality")
+# # plot_curvatures()
+# quadruple_plot([
+#     'meshes/mesh_data/vertex_quality/sphere/curvature_gauss_normal_vertex_quality.npy',
+#     'meshes/mesh_data/vertex_quality/sphere/curvature_gauss_principal_vertex_quality.npy',
+#     'meshes/mesh_data/vertex_quality/sphere/curvature_gauss_pseudoinverse_vertex_quality.npy',
+#     'meshes/mesh_data/vertex_quality/sphere/curvature_gauss_taubin_apr_vertex_quality.npy'
+# ], "Random mesh quality")
 
-quadruple_plot([
-    'meshes/mesh_data/vertex_quality/sphere/curvature_mean_normal_vertex_quality.npy',
-    'meshes/mesh_data/vertex_quality/sphere/curvature_mean_principal_vertex_quality.npy',
-    'meshes/mesh_data/vertex_quality/sphere/curvature_mean_pseudoinverse_vertex_quality.npy',
-    'meshes/mesh_data/vertex_quality/sphere/curvature_mean_taubin_apr_vertex_quality.npy'
-], "Random mesh quality")
+# quadruple_plot([
+#     'meshes/mesh_data/vertex_quality/sphere/curvature_mean_normal_vertex_quality.npy',
+#     'meshes/mesh_data/vertex_quality/sphere/curvature_mean_principal_vertex_quality.npy',
+#     'meshes/mesh_data/vertex_quality/sphere/curvature_mean_pseudoinverse_vertex_quality.npy',
+#     'meshes/mesh_data/vertex_quality/sphere/curvature_mean_taubin_apr_vertex_quality.npy'
+# ], "Random mesh quality")
