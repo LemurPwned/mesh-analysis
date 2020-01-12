@@ -6,6 +6,20 @@ import os
 import itertools
 
 
+def compute_curvatures(filename):
+    mesh = pymesh.load_mesh(filename)
+    mesh.add_attribute('vertex_gaussian_curvature')
+    mesh.add_attribute('vertex_mean_curvature')
+
+    g = mesh.get_attribute("vertex_gaussian_curvature")
+    m = mesh.get_attribute("vertex_mean_curvature")
+
+    bname = os.path.basename(filename.replace('.ply', ''))
+    np.save(
+        f"meshes/mesh_data/curvature_comp/pymesh_curv/{bname}_gaussian.npy", g)
+    np.save(f"meshes/mesh_data/curvature_comp/pymesh_curv/{bname}_mean.npy", m)
+
+
 def mesh_op(filename):
     mesh = pymesh.load_mesh(filename)
     assembler = pymesh.Assembler(mesh)
@@ -15,6 +29,18 @@ def mesh_op(filename):
     print(eigenvecs.shape, eigenvals.shape)
     np.save("eigenvals.npy", eigenvals)
     np.save("eigenvecs.npy", eigenvecs)
+
+
+def read_and_save_attr(filename, attribute, foldername):
+    mesh = pymesh.load_mesh(filename)
+    bsn = os.path.basename(filename.replace('.ply', ''))
+    attr_npy = mesh.get_vertex_attribute(attribute)
+    def_dir = f'meshes/mesh_data/{attribute}/{foldername}/'
+    print(def_dir)
+    print(filename)
+    os.makedirs(def_dir, exist_ok=True)
+    savename = f"{def_dir}/{bsn}_{attribute}.npy"
+    np.save(savename, attr_npy)
 
 
 def compare_curvature(gaussian_, mean_, save_npy=True):
@@ -79,7 +105,7 @@ def calculate_mesh_quality(meshname):
     mesh.enable_connectivity()
     mesh.add_attribute('face_area')
     faces_areas = mesh.get_face_attribute('face_area')
-    qualities, skewness, min_angles = [], [], []
+    qualities, skewness, min_angles, aspect_ratios = [], [], [], []
     print(f"Mesh contains {mesh.num_faces} faces")
 
     equi_angle = np.pi / 3
@@ -110,15 +136,17 @@ def calculate_mesh_quality(meshname):
 
         sk = np.max([(max_angle - equi_angle) / (np.pi - equi_angle),
                      (equi_angle - min_angle) / equi_angle])
-
+        ar = max(edges_lengths) / min(edges_lengths)
         edges_len = sum([e**2 for e in edges_lengths])
         q /= edges_len
         qualities.append(q)
         skewness.append(sk)
+        aspect_ratios.append(ar)
         min_angles.append(min_angle)
 
     skewness = np.array(skewness)
     qualities = np.array(qualities)
+    aspect_ratios = np.array(aspect_ratios)
     basename = os.path.basename(meshname).replace('.ply', '')
     np.save(f'meshes/mesh_data/quality_data/{basename}_qualities.npy',
             qualities)
@@ -126,6 +154,8 @@ def calculate_mesh_quality(meshname):
     np.save(f'meshes/mesh_data/quality_data/{basename}_areas.npy', faces_areas)
     np.save(f'meshes/mesh_data/quality_data/{basename}_min_angles.npy',
             min_angles)
+    np.save(f'meshes/mesh_data/quality_data/{basename}_aspect_ratio.npy',
+            aspect_ratios)
 
 
 def edge_skewness(edges):
@@ -157,9 +187,7 @@ def aggregate_cmp_data():
     curvatures = ['gauss', 'mean']
 
     curv_dir = 'meshes/bunny/reconstruction/curvatures'
-    fns = [
-        os.path.join(curv_dir, fn) for fn in os.listdir(curv_dir)
-    ]
+    fns = [os.path.join(curv_dir, fn) for fn in os.listdir(curv_dir)]
 
     for element in itertools.combinations(fns, r=2):
         if element[0] != element[1]:
@@ -167,4 +195,23 @@ def aggregate_cmp_data():
             compare_curvature(*element, save_npy=True)
 
 
-aggregate_cmp_data()
+def extract_curvatures():
+    for mesh_filename in [
+            'meshes/bunny/reconstruction/bun_zipper.ply',
+            'meshes/skeleton/hand.ply', 'meshes/sphere/sphere.ply'
+    ]:
+        print(f"Extracting for {mesh_filename}...")
+        compute_curvatures(mesh_filename)
+
+
+def extract_attribs(folder):
+    for fn in os.listdir(folder):
+        filename = os.path.join(folder, fn)
+        print(f"Processing {filename}")
+        read_and_save_attr(filename, 'vertex_quality', foldername='bunny')
+
+
+# aggregate_cmp_data()
+aggregate_mesh_quality_data()
+# extract_curvatures()
+# extract_attribs('meshes/bunny/reconstruction/curvatures')
